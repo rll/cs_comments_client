@@ -25,6 +25,15 @@ module CommentClient
       end
     end
 
+    def get_comment(comment_id)
+      response = RestClient.get(url_for_comment(comment_id)){|response, request, result| response }
+      if response.code == 200
+        parse(response.body)
+      else
+        process_error(response)
+      end
+    end
+
     def delete_thread(commentable)
       response = RestClient.delete(url_for_commentable(commentable)){|response, request, result| response }
       process_error(response)

@@ -8,9 +8,9 @@ describe "CommentClient" do
     question = Question.create!
     RestClient.get "#{api_base_url}/clean" # Helper api to clean the database. Only valid in development mode
     comment1 = RestClient.post "#{api_base_url}/commentables/questions/#{question.id}/comments", :body => "top comment", :title => "top 0", :user_id => 1, :course_id => 1
-    comment1 = Yajl::Parser.parse(comment1.body)["comment"]
+    comment1 = Yajl::Parser.parse(comment1.body)
     comment2 = RestClient.post "#{api_base_url}/commentables/questions/#{question.id}/comments", :body => "top comment", :title => "top 1", :user_id => 1, :course_id => 1
-    comment2 = Yajl::Parser.parse(comment2.body)["comment"]
+    comment2 = Yajl::Parser.parse(comment2.body)
     sub_comment1 = RestClient.post "#{api_base_url}/comments/#{comment1["id"]}", :body => "comment body", :title => "comment title 0", :user_id => 1, :course_id => 1
     sub_comment2 = RestClient.post "#{api_base_url}/comments/#{comment2["id"]}", :body => "comment body", :title => "comment title 1", :user_id => 1, :course_id => 1
 
@@ -22,7 +22,7 @@ describe "CommentClient" do
   end
 
   describe "#comments_for(commentable)" do
-    it "should get all comments and their votes associated with the commentable object" do
+    it "gets all comments and their votes associated with the commentable object" do
       question = Question.first
       comments = CommentClient.comments_for(question)
       comments.length.should == 2
@@ -39,8 +39,22 @@ describe "CommentClient" do
     end
   end
 
+  describe "#get_comment(comment_id)" do
+    it "gets the information of a single comment" do
+      question = Question.first
+      comment = CommentClient.comments_for(question).first
+      c = CommentClient.get_comment(comment["id"])
+      %w[body title id user_id course_id comment_thread_id].each do |attr|
+        c[attr].should == comment[attr]
+      end
+      c["votes"]["up"].should == comment["votes"]["up"]
+      c["votes"]["down"].should == comment["votes"]["down"]
+      c["children"].should be_nil
+    end
+  end
+
   describe "#delete_thread(commentable)" do
-    it "should remove all comments associated with the commentable object" do
+    it "removes all comments associated with the commentable object" do
       question = Question.first
       errors = CommentClient.delete_thread(question)
       errors.should be_nil
