@@ -69,6 +69,14 @@ module CommentClient
       process_error(response)
     end
 
+    def commentable_type(commentable)
+      (commentable.class.respond_to?(:base_class) ? commentable.class.base_class : commentable.class).to_s.underscore.pluralize
+    end
+
+    def commentable_id(commentable)
+      commentable.id
+    end
+
   private
 
     def process_error(response)
@@ -85,11 +93,8 @@ module CommentClient
       "http://#{@@service_host}/api/v1"
     end
 
-    def commentable_type(commentable)
-      (commentable.class.respond_to?(:base_class) ? commentable.class.base_class : commentable.class).to_s.underscore.pluralize
-    end
     def url_for_commentable(commentable)
-      "#{url_prefix}/commentables/#{commentable_type(commentable)}/#{commentable.id}"
+      "#{url_prefix}/commentables/#{commentable_type(commentable)}/#{commentable_id(commentable)}"
     end
 
     def url_top_level_comments(commentable)

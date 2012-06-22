@@ -151,11 +151,11 @@ describe "CommentClient" do
       comment = CommentClient.comments_for(question).reject{|comment| comment["votes"]["up"] == 0}.first
       comment["votes"]["down"].should == 2
     end
-    it "rejects nonexisting vote" do
+    it "does nothing for nonexisting vote" do
       question = Question.first
       comment = CommentClient.comments_for(question).reject{|comment| comment["votes"]["up"] == 0}.first
       errors = CommentClient.unvote_comment(comment["id"], 10)
-      errors.should_not be_nil
+      errors.should be_nil
     end
   end
 
