@@ -17,7 +17,7 @@ module CommentClient
     end
 
     def comments_for(commentable, args=nil)
-      response = RestClient.get(url_top_level_comments(commentable), args){|response, request, result| response }
+      response = RestClient.get(url_top_level_comments(commentable), :params => args){|response, request, result| response }
       if response.code == 200
         parse(response.body)
       else
@@ -26,7 +26,7 @@ module CommentClient
     end
 
     def get_comment(comment_id, args=nil)
-      response = RestClient.get(url_for_comment(comment_id), args){|response, request, result| response }
+      response = RestClient.get(url_for_comment(comment_id), :params => args){|response, request, result| response }
       if response.code == 200
         parse(response.body)
       else
