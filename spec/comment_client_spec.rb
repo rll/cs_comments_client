@@ -56,8 +56,8 @@ describe "CommentClient" do
   describe "#delete_thread(commentable)" do
     it "removes all comments associated with the commentable object" do
       question = Question.first
-      errors = CommentClient.delete_thread(question)
-      errors.should be_nil
+      comment_thread = CommentClient.delete_thread(question)
+      comment_thread["error"].should be_nil
       CommentClient.comments_for(question).length.should == 0
     end
   end
@@ -65,8 +65,8 @@ describe "CommentClient" do
   describe "#add_comment(commentable, comment_hash)" do
     it "adds a top-level comment" do
       question = Question.first
-      errors = CommentClient.add_comment(question, :body => "top comment", :title => "top 2", :user_id => 1, :course_id => 1)
-      errors.should be_nil
+      comment = CommentClient.add_comment(question, :body => "top comment", :title => "top 2", :user_id => 1, :course_id => 1)
+      comment["error"].should be_nil
       CommentClient.comments_for(question).length.should == 3
     end
   end
@@ -75,9 +75,10 @@ describe "CommentClient" do
     it "adds a sub-comment to the comment" do
       question = Question.first
       comments = CommentClient.comments_for(question)
-      errors = CommentClient.reply_to(comments[0]["id"], :body => "comment body", :title => "comment title 2", :user_id => 1, :course_id => 1)
-      errors ||= CommentClient.reply_to(comments[1]["id"], :body => "comment body", :title => "comment title 3", :user_id => 1, :course_id => 1)
-      errors.should be_nil
+      comment1 = CommentClient.reply_to(comments[0]["id"], :body => "comment body", :title => "comment title 2", :user_id => 1, :course_id => 1)
+      comment2 = CommentClient.reply_to(comments[1]["id"], :body => "comment body", :title => "comment title 3", :user_id => 1, :course_id => 1)
+      comment1["error"].should be_nil
+      comment2["error"].should be_nil
       CommentClient.comments_for(question).first["children"].length.should == 2
     end
   end
@@ -86,14 +87,14 @@ describe "CommentClient" do
     it "updates the comment" do
       question = Question.first
       comment = CommentClient.comments_for(question).first
-      errors = CommentClient.update_comment(comment["id"], :body => "updated")
-      errors.should be_nil
+      comment = CommentClient.update_comment(comment["id"], :body => "updated")
+      comment["error"].should be_nil
       CommentClient.comments_for(question).collect{|c| c["body"]}.include?("updated").should be_true
     end
     it "does not update invalid attributes" do
       question = Question.first
       comment = CommentClient.comments_for(question).first
-      errors = CommentClient.update_comment(comment["id"], :id => "100")
+      comment = CommentClient.update_comment(comment["id"], :id => "100")
       CommentClient.comments_for(question).collect{|c| c["id"].to_s}.include?("100").should be_false
     end
   end
@@ -102,8 +103,8 @@ describe "CommentClient" do
     it "deletes the comment with id comment_id together with its sub-comments" do
       question = Question.first
       comment = CommentClient.comments_for(question).first
-      errors = CommentClient.delete_comment(comment["id"])
-      errors.should be_nil
+      comment = CommentClient.delete_comment(comment["id"])
+      comment["error"].should be_nil
       CommentClient.comments_for(question).length == 1
     end
   end
@@ -112,33 +113,32 @@ describe "CommentClient" do
     it "votes up on the comment" do
       question = Question.first
       comment = CommentClient.comments_for(question).reject{|comment| comment["votes"]["up"] == 0}.first
-      errors = CommentClient.vote_comment(comment["id"], 6, :value => "up")
-      errors.should be_nil
-      comment = CommentClient.comments_for(question).reject{|comment| comment["votes"]["up"] == 0}.first
+      comment = CommentClient.vote_comment(comment["id"], 6, :value => "up")
+      comment["error"].should be_nil
+      #comment = CommentClient.comments_for(question).reject{|comment| comment["votes"]["up"] == 0}.first
       comment["votes"]["up"].should == 3
     end
     it "votes down on the comment" do
       question = Question.first
       comment = CommentClient.comments_for(question).reject{|comment| comment["votes"]["up"] == 0}.first
-      errors = CommentClient.vote_comment(comment["id"], 6, :value => "down")
-      errors.should be_nil
-      comment = CommentClient.comments_for(question).reject{|comment| comment["votes"]["up"] == 0}.first
+      comment = CommentClient.vote_comment(comment["id"], 6, :value => "down")
+      comment["error"].should be_nil
+      #comment = CommentClient.comments_for(question).reject{|comment| comment["votes"]["up"] == 0}.first
       comment["votes"]["down"].should == 4
     end
     it "updates previous vote" do
       question = Question.first
       comment = CommentClient.comments_for(question).reject{|comment| comment["votes"]["up"] == 0}.first
-      errors = CommentClient.vote_comment(comment["id"], 4, :value => "up")
-      errors.should be_nil
-      comment = CommentClient.comments_for(question).reject{|comment| comment["votes"]["up"] == 0}.first
+      comment = CommentClient.vote_comment(comment["id"], 4, :value => "up")
+      comment["error"].should be_nil
       comment["votes"]["up"].should == 3
       comment["votes"]["down"].should == 2
     end
     it "rejects invalid vote value" do
       question = Question.first
       comment = CommentClient.comments_for(question).reject{|comment| comment["votes"]["up"] == 0}.first
-      errors = CommentClient.vote_comment(comment["id"], 6, :value => "up_or_down")
-      errors.should_not be_nil
+      comment = CommentClient.vote_comment(comment["id"], 6, :value => "up_or_down")
+      comment["error"].should_not be_nil
     end
   end
 
@@ -146,16 +146,15 @@ describe "CommentClient" do
     it "unvotes on the comment" do
       question = Question.first
       comment = CommentClient.comments_for(question).reject{|comment| comment["votes"]["up"] == 0}.first
-      errors = CommentClient.unvote_comment(comment["id"], 4)
-      errors.should be_nil
-      comment = CommentClient.comments_for(question).reject{|comment| comment["votes"]["up"] == 0}.first
+      comment = CommentClient.unvote_comment(comment["id"], 4)
+      comment["error"].should be_nil
       comment["votes"]["down"].should == 2
     end
     it "does nothing for nonexisting vote" do
       question = Question.first
       comment = CommentClient.comments_for(question).reject{|comment| comment["votes"]["up"] == 0}.first
-      errors = CommentClient.unvote_comment(comment["id"], 10)
-      errors.should be_nil
+      comment = CommentClient.unvote_comment(comment["id"], 10)
+      comment["error"].should be_nil
     end
   end
 

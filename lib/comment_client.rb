@@ -21,17 +21,13 @@ module CommentClient
       if response.code == 200
         parse(response.body)
       else
-        {"error" => "unexpected error"}
+        [{"error" => "unexpected error"}]
       end
     end
 
     def get_comment(comment_id, args=nil)
       response = RestClient.get(url_for_comment(comment_id), :params => args){|response, request, result| response }
-      if response.code == 200
-        parse(response.body)
-      else
-        process_error(response)
-      end
+      process_error(response)
     end
 
     def delete_thread(commentable)
@@ -80,12 +76,10 @@ module CommentClient
   private
 
     def process_error(response)
-      if response.code == 400
+      if (200...500).include?(response.code)
         parse(response.body)
-      elsif response.code != 200
-        {"error" => "unexpected error"}
       else
-        nil
+        {"error" => "unexpected error"}
       end
     end
 
